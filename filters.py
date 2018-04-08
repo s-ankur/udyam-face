@@ -2,9 +2,7 @@ import cv2
 from utility.cv_utils import *
 import glob
 import os
-#from dataset import kaggle
-
-
+from detectors import extract_eyes
 class Filter:
     def apply(self, img, faces):
         for face in faces:
@@ -59,11 +57,9 @@ class PixelateFilter(Filter):
         face_img[:, :, :] = np.where(mask3d, new_img, face_img)
 
 class FFilter(Filter):
-    def __init__(self, pixellation=.09):
-        self.pixellation = pixellation
 
     def __call__(self, image, bbox):
-        face_img = crop(image, bbox, extend=20)
+        face_img = crop(image, bbox, extend=5)
         mask = im2bw(face_img, otsu=True, threshold=10)
         mask = (mask == 0)
         try: 
@@ -135,23 +131,46 @@ class SwapFaces:
         if len(faces) > 1:
             overlay(faces[0], old_face)
 
+from emotion.dataset import kaggle
+#from emotion.dataset import kaggle
+from keras.models import model_from_json
 
 class EmotionFilter(Filter):
-    emotions = None#kaggle.emotions
-    color = (0, 255, 0)
+    #emotions=['anger','disgust','fear','happy','neutral','sadness','surprise']
+    emotions=kaggle.emotions
+    emotion_pics= [imread(r'data/'+emotion+'.png',mode='alpha') for emotion in kaggle.emotions]
+    color = (255, 255, 0)
+    colors=((255,0,0), (100,100,50), (255,255,0), (0,255,0), (0,0,255), (255,255,255), (50,50,50))
     font = cv2.FONT_HERSHEY_SIMPLEX
 
     def __init__(self, json_path):
-        with open(json_path) as json_file:
+        with open(json_path+'.json') as json_file:
             json_string = json_file.read()
         self.model = model_from_json(json_string)
-
-    def __call__(self, img, bbox):
-        face_img = crop(img, bbox)
-        emotion_id = model.predict(face_img)
-        cv2.rectangle(img, bbox[:2], bbox[2:], self.color, 3)
-        cv2.putText(img, self.emotions[emotion_id], bbox[:2], self.font, .5, 255)
+        self.model.load_weights(json_path+'.h5')
         
+    def draw_emotions(self,emotion_v,img):
+        i=0
+        for emotion,val in zip(self.emotions,emotion_v):
+            a=np.array([15,val*30])
+            bbox=np.array([15*i,0])
+            cv2.rectangle(img,tuple( bbox[:2].astype('int')),tuple((bbox[:2]+a).astype('int')), self.colors[i], -1)
+            i+=1
+    
+    def __call__(self, img, bbox):
+        face = crop(img, bbox)
+        eyes=extract_eyes(face)
+        face_img = Color.convert(face,'gray')
+        face_img = cv2.resize(face_img,kaggle.image_shape[:2])
+        emotion_v = self.model.predict((face_img/255).reshape(1,*kaggle.image_shape))
+        emotion_v[0,1]=0
+        emotion_id = emotion_v[0,:].argmax(0)
+        for bbox_eye in eyes:
+            eye=crop(face,bbox_eye)
+            blend_transparent(eye,self.emotion_pics[emotion_id])
+        #cv2.rectangle(img,tuple( bbox[:2]),tuple(bbox[:2]+ bbox[2:]), self.color, 3)
+        cv2.putText(img, self.emotions[emotion_id], tuple(bbox[:2]), self.font, .5, 255)
+        self.draw_emotions(emotion_v[0,:],img)
 
 import numpy as np
 flame=imread(r'data/flame.png',mode='alpha')
@@ -165,3 +184,4 @@ moustace_filter=OverlayFilter(much)
 specs_filter=OverlayFilter(specs) 
 ffilter=FFilter()
 muck_filter=OverlayFilter(muck,50)
+emotion_filter=EmotionFilter(r'emotion/trained_models/fad')
