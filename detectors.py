@@ -3,9 +3,7 @@ import os
 
 _detector_names = (
     "haarcascade_frontalface_default.xml",
-    "haarcascade_frontalface_alt2.xml",
-    "haarcascade_frontalface_alt.xml",
-    "haarcascade_frontalface_alt_tree.xml")
+    "haarcascade_frontalface_alt2.xml",)
 
 _eye_detector_name ="eyes.xml"
 

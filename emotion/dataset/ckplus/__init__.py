@@ -1,29 +1,22 @@
 import cv2
 import glob,os
+import numpy as np
+
+emotions =glob.glob(os.path.join("dataset/ckplus/dataset",'*'))
+image_shape=(48,48,1)
 import random
-emotions =glob.glob(os.path.join("dataset",'*'))
-
-
 
 def load_data():
     training_data = []
     training_labels = []
-    prediction_data = []
-    prediction_labels = []
     for label,emotion in enumerate(emotions):
         files = glob.glob(os.path.join(emotion,'*'))
         print("Emotion %s --- %d files"%(emotion,len(files)))
         random.shuffle(files)
-        training = files[:int(len(files)*0.8)]  
-        prediction = files[-int(len(files)*0.2):]  
-        for item in training:
-            image = cv2.imread(item)  
-            gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)  
-            training_data.append(gray)  
+        for file in files:
+            image = cv2.imread(file,cv2.IMREAD_GRAYSCALE)  
+            training_data.append(image.reshape(image_shape))  
             training_labels.append(label)
-        for item in prediction:
-            image = cv2.imread(item)    
-            gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
-            prediction_data.append(gray)
-            prediction_labels.append(label)
-    return training_data, training_labels, prediction_data, prediction_labels
+    training_data=np.array(training_data)
+    training_labels=np.array(training_labels)
+    return training_data, training_labels
