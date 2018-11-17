@@ -104,5 +104,3 @@ def cnn_model(input_shape, num_classes, l2_regularization=0.01):
 
     model = Model(img_input, output)
     return model
-
-

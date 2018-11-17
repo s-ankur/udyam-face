@@ -4,7 +4,7 @@ emotions = ('Anger', 'Disgust', 'Fear', 'Happy', 'Sad', 'Surprise', 'Neutral')
 def load_data(name):
     import pandas as pd
     import numpy as np
-    path = name+'.csv'
+    path = name + '.csv'
     data = pd.read_csv(path)
     y = data.Emotion.as_matrix()
     x = []
