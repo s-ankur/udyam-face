@@ -13,7 +13,7 @@ def main():
                 filter.apply(img, features)
                 if imshow(img, hold=True, window_name='Overlay') == 'q':
                     break
-            except BaseException:
+            except:
                 pass
 
 
